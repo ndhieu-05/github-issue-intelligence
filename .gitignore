@@ -1,0 +1,18 @@
+# Environment
+.env
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Raw data
+data/raw/
+
+# Local testing scripts
+try_client.py
+try_query.py
+check_data.py
+
+# Local documents
+IDEA.docx

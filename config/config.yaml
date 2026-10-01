@@ -1,0 +1,5 @@
+github:
+  owner: openbao
+  name: openbao
+  max_issues: 500
+  page_size: 50
