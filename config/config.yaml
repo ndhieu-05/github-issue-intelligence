@@ -3,3 +3,10 @@ github:
   name: openbao
   max_issues: 500
   page_size: 50
+
+postgres:
+  host: localhost
+  dbname: issues
+  user: user
+  password: pass
+  port: 5433
