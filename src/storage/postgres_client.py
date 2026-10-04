@@ -1,17 +1,12 @@
 from pathlib import Path
 
 import psycopg2
-import yaml
+from src.storage.config import load_config
 
 # Config
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-CONFIG_PATH = PROJECT_ROOT / "config" / "config.yaml"
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
-
-def load_config():
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
 
 # postgres connection
 def get_connection():

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-import yaml
+from src.storage.config import load_config
 
 from src.storage.postgres_client import (
     get_connection,
@@ -13,14 +13,7 @@ from src.storage.postgres_client import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-CONFIG_PATH = PROJECT_ROOT / "config" / "config.yaml"
 RAW_PATH = PROJECT_ROOT / "data" / "raw" / "issues.json"
-
-
-def load_config():
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
 
 def load_issues():
     with open(RAW_PATH, "r", encoding="utf-8") as f:
