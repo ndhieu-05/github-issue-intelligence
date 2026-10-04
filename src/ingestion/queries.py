@@ -42,11 +42,13 @@ query($owner: String!, $name: String!, $cursor: String) {
             ... on ClosedEvent {
               closer {
                 ... on PullRequest {
+                  __typename
                   number
                   title
                   url
                 }
                 ... on Commit {
+                  __typename
                   oid
                   url
                 }
@@ -57,11 +59,13 @@ query($owner: String!, $name: String!, $cursor: String) {
               willCloseTarget
               source {
                 ... on PullRequest {
+                  __typename
                   number
                   title
                   url
                 }
                 ... on Issue {
+                  __typename
                   number
                   title
                   url
