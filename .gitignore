@@ -13,6 +13,7 @@ data/raw/
 try_client.py
 try_query.py
 check_data.py
+check_postgre_vs_neo4j.py
 
 # Local documents
 IDEA.docx
