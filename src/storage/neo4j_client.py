@@ -7,6 +7,7 @@ từ dữ liệu GitHub đã ingest (data/raw/issues.json), dùng MERGE để id
 """
 
 from src.storage.config import load_config
+from src.utils import parse_repo_from_url
 
 from neo4j import Driver, GraphDatabase
 from typing import Optional
@@ -33,18 +34,6 @@ def get_driver()->Driver:
 def close_driver(driver: Driver)->None:
     """Đóng driver, giải phóng connection pool."""
     return driver.close()
-
-def parse_repo_from_url(url: str)->str:
-    """Trích "owner/name" từ URL GitHub của PR/Issue/Commit.
-        Args:
-        url: URL dạng "https://github.com/<owner>/<name>/pull/64" hoặc
-            ".../issues/81" hoặc ".../commit/<oid>".
-
-    Returns:
-        str: "<owner>/<name>", ví dụ "openbao/go-kms-wrapping".
-    """
-    parts = url.split("/")
-    return f"{parts[3]}/{parts[4]}"
 
 def merge_issue(driver: Driver, repo:str, issue_dict:dict)->None:
     """Tạo/cập nhật 1 node :Issue.
@@ -188,6 +177,51 @@ def merge_closed_by(
 
     else: 
         raise ValueError(f"Unknown closer_type: {closer_type}")
+
+    with driver.session() as session:
+        session.run(query, **params)
+
+def merge_pr_commits(
+    driver: Driver,
+    repo: str,
+    pr_number:int,
+    commit_dict: Optional[dict],
+)-> None:
+    """Tạo/cập nhật node Commit và cạnh PR-[:INCLUDES]->Commit.
+
+    Args:
+        driver: Neo4j driver.
+        repo: "owner/name" của repo chứa Pull Request.
+        pr_number: số Pull Request.
+        commit_dict: thông tin commit lấy từ pr_commits.json,
+            cần có oid, url; messageHeadline tùy chọn.
+    """
+
+    query = """
+        MATCH (p:PullRequest{
+            repo: $repo,
+            number: $pr_number
+        })
+
+        MERGE (c:Commit{
+            repo: $repo,
+            oid: $oid
+        })
+
+        SET
+            c.url = $url,
+            c.messageHeadline = $message_headline
+
+        MERGE (p)-[:INCLUDES]->(c)
+    """
+
+    params = {
+        "repo": repo,
+        "pr_number": pr_number,
+        "oid": commit_dict["oid"],
+        "url": commit_dict.get("url"),
+        "message_headline": commit_dict.get("messageHeadline"),
+    }
 
     with driver.session() as session:
         session.run(query, **params)
