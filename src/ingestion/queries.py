@@ -85,3 +85,29 @@ query($owner: String!, $name: String!, $cursor: String) {
   }
 }
 """
+
+PR_COMMITS_QUERY = """
+  query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      number
+      title
+      url
+      state
+      mergedAt
+      commits(first: 100) {
+        totalCount
+        pageInfo { hasNextPage }
+        nodes {
+          commit {
+            oid
+            messageHeadline
+            url
+          }
+        }
+      }
+    }
+  }
+  rateLimit { cost remaining limit }
+}
+"""
