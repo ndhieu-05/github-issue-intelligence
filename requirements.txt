@@ -3,3 +3,5 @@ python-dotenv
 PyYAML
 psycopg2-binary
 neo4j
+sentence-transformers 
+pgvector
