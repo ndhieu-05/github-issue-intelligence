@@ -12,6 +12,7 @@ data/raw/
 # Local testing scripts
 try_client.py
 try_query.py
+try_search.py
 check_data.py
 check_postgre_vs_neo4j.py
 

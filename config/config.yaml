@@ -15,3 +15,7 @@ neo4j:
   uri: bolt://localhost:7687
   user: neo4j
   password: neo4j123
+
+embedding:
+  model: all-MiniLM-L6-v2
+  dim: 384
