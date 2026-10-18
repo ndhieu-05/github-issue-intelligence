@@ -13,8 +13,16 @@ data/raw/
 try_client.py
 try_query.py
 try_search.py
+try_graph.py
+try_fetch.py
+try_tools.py
+try_agent.py 
+try_llm_tools.py
+test_llm.py 
 check_data.py
 check_postgre_vs_neo4j.py
+check_agent_pg.py
 
 # Local documents
 IDEA.docx
+decision.md
