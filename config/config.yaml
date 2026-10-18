@@ -19,3 +19,10 @@ neo4j:
 embedding:
   model: all-MiniLM-L6-v2
   dim: 384
+
+llm: 
+  model: "gemini-3.8-flash"
+  base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
+  temperature: 0
+  max_steps: 6
+  max_retries: 5
