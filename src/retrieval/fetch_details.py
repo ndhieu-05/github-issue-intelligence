@@ -32,6 +32,11 @@ NOTE_PR_GRAPH_ONLY = (
 NOTE_COMMIT_GRAPH_ONLY = (
     "Chỉ có mã commit, liên kết và PR chứa nó; nội dung thay đổi chưa được ingest."
 )
+NOTE_PR_NO_DETAILS = (
+    "Chỉ có tiêu đề và liên kết. Commit và nội dung PR chưa được ingest cho PR này "
+    "(chỉ PR đã đóng một issue trong dữ liệu mới có commit), nên commit hoặc closes_issues "
+    "trống không có nghĩa là PR không có commit hay không đóng issue nào."
+)
 
 # ======= PostgreSQL
 ISSUE_SQL = """
@@ -256,16 +261,17 @@ def fetch_pull_request(
     row = rows[0]
     commits = [_pick(c, COMMIT_KEYS) for c in row["commits"]]
     issues = [_pick(i, LINK_KEYS) for i in row["issues"]]
+    has_commits = bool(commits)
 
     return {
         "kind": "pull_request",
         **_pick(_node_props(row["pr"]), LINK_KEYS),
-        "commit_count": len(commits),
-        "commits": commits[:MAX_LIST_ITEMS],
+        "commit_count": len(commits) if has_commits else None,
+        "commits": commits[:MAX_LIST_ITEMS] if has_commits else None,
         "closes_issue_count": len(issues),
         "closes_issues": issues[:MAX_LIST_ITEMS],
         "source": "graph_only",
-        "note": NOTE_PR_GRAPH_ONLY,
+        "note": NOTE_PR_GRAPH_ONLY if has_commits else NOTE_PR_NO_DETAILS,
     }
 
 # ====== 3. Commit

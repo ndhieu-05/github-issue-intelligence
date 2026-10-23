@@ -71,16 +71,15 @@ def graph_expand(
     Args:
         repo: "owner/name" của issue, lấy từ kết quả semantic_search.
         number: số issue.
-        max_items: số phần tử tối đa của mỗi danh sách (và số commit tối đa
-            của mỗi PR). Tổng số thật vẫn được ghi trong "counts".
+        max_items: số phần tử tối đa của mỗi danh sách. Tổng số thật vẫn được ghi trong "counts".
 
     Returns:
         None nếu không tìm thấy issue trong graph. Ngược lại là dict gồm:
         - issue: thông tin issue
-        - closed_by: PR/Commit đã đóng issue (bằng chứng chắc chắn). PR kèm
+        - closed_by: PR/Commit đã đóng issue. PR kèm
           commit_count và danh sách commits.
         - co_closed_issues: issue khác bị đóng bởi cùng PR.
-        - referenced_by: PR/issue nhắc tới issue này (tín hiệu yếu).
+        - referenced_by: PR/issue nhắc tới issue này.
         - counts: tổng số thật của từng danh sách trước khi cắt.
     """
 
