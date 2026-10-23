@@ -6,3 +6,5 @@ neo4j
 sentence-transformers 
 pgvector
 openai
+langgraph
+langchain-core
