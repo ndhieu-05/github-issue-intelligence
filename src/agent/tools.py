@@ -19,7 +19,7 @@ from src.retrieval.semantic_search import semantic_search
 
 logger = logging.getLogger(__name__)
 
-MAX_RESULT_CHARS = 8000
+MAX_RESULT_CHARS = 3000
 REPO_PATTERN = re.compile(r"^[\w.-]+/[\w.-]+$")
 
 
