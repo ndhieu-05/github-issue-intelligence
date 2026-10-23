@@ -6,7 +6,7 @@ import time
 from typing import Any
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import BadRequestError, OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,20 @@ def call_llm(
         kwargs["tool_choice"] = tool_choice
 
     start = time.perf_counter()
-    response = client.chat.completions.create(**kwargs)
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = client.chat.completions.create(**kwargs)
+            break
+        except BadRequestError as exc:
+            # Model sinh tool call sai định dạng: lỗi thoáng qua, thử lại.
+            if "output_parse_failed" not in str(exc) or attempt == max_attempts:
+                raise
+            logger.warning(
+                "Model sinh tool call lỗi định dạng (lần %d/%d), thử lại", attempt, max_attempts
+            )
+            # Với temperature=0 lần thử lại có thể ra đúng kết quả cũ, nên nâng nhẹ.
+            kwargs["temperature"] = max(kwargs["temperature"], 0.3)
     elapsed = time.perf_counter() - start
 
     logger.debug("LLM request hoàn tất trong %.2f giây", elapsed)
