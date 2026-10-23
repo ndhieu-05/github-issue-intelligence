@@ -20,7 +20,7 @@ def embed_texts(texts: list[str]) -> np.ndarray:
         np.ndarray: shape (len(texts), dim), dtype float32, đã chuẩn hóa L2
         nên cosine distance tính đúng. dim lấy từ config["embedding"]["dim"].
     """
-    return model.encode(texts, batch_size=32, normalize_embeddings=True)
+    return model.encode(texts, batch_size=32, normalize_embeddings=True, show_progress_bar=False)
 
 
 def build_text(title: str, body: str | None = None) -> str:

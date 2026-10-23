@@ -259,7 +259,7 @@ def fetch_pull_request(
         return None
 
     row = rows[0]
-    commits = [_pick(c, COMMIT_KEYS) for c in row["commits"]]
+    commits = [_commit_props(c) for c in row["commits"]]
     issues = [_pick(i, LINK_KEYS) for i in row["issues"]]
     has_commits = bool(commits)
 
@@ -289,7 +289,7 @@ def fetch_commit(
 
     return {
         "kind": "commit",
-        **_pick(_node_props(row["c"]), COMMIT_KEYS),
+        **_commit_props(row["c"]),
         "in_pull_requests": pull_requests[:MAX_LIST_ITEMS],
         "source": "graph_only",
         "note": NOTE_COMMIT_GRAPH_ONLY,
@@ -328,3 +328,9 @@ def fetch_details(kind: str, repo: str, ref: int|str)-> dict|None:
         return fetch_commit(repo, str(ref).strip())
 
     raise ValueError(f"kind không hợp lệ: {kind!r} (chọn issue, pull_request hoặc commit)")
+
+def _commit_props(node: dict | None) -> dict:
+    props = _node_props(node)
+    result = _pick(props, COMMIT_KEYS)
+    result["message"] = props.get("messageHeadline")
+    return result
