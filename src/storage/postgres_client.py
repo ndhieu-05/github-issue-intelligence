@@ -119,36 +119,24 @@ def upsert_issue(conn, repo_id, issue_dict):
 
 # Comments
 def insert_comments(conn, issue_id, comments_list):
-    """
-    Insert comments vào từng issue
-    """
-
-    if not comments_list:
-        return
-
+    """Ghi lại toàn bộ comment của issue (xóa bản cũ trước nên chạy lại không tạo trùng)."""
     query = """
-        INSERT INTO comments (
-            issue_id,
-            author_login,
-            body,
-            created_at
-        )
+        INSERT INTO comments (issue_id, author_login, body, created_at)
         VALUES (%s, %s, %s, %s);
     """
-
     values = [
         (
             issue_id,
-            comment.get("author", {}).get("login")
-            if comment.get("author")
-            else None,
+            comment.get("author", {}).get("login") if comment.get("author") else None,
             comment.get("body"),
             comment.get("createdAt"),
         )
-        for comment in comments_list
+        for comment in (comments_list or [])
     ]
 
     with conn.cursor() as cur:
-        cur.executemany(query, values)
+        cur.execute("DELETE FROM comments WHERE issue_id = %s", (issue_id,))
+        if values:
+            cur.executemany(query, values)
 
     conn.commit()

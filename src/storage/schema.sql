@@ -1,13 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TABLE repos (
+CREATE TABLE IF NOT EXISTS repos (
     repo_id     SERIAL PRIMARY KEY,
     owner       TEXT NOT NULL,
     name        TEXT NOT NULL,
     UNIQUE (owner, name)
 );
 
-CREATE TABLE issues (
+CREATE TABLE IF NOT EXISTS issues (
     issue_id    SERIAL PRIMARY KEY,
     repo_id     INT NOT NULL REFERENCES repos(repo_id),
     number      INT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE issues (
     UNIQUE (repo_id, number)          -- khóa tự nhiên: KHÔNG dùng number một mình
 );
 
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
     comment_id   SERIAL PRIMARY KEY,
     issue_id     INT NOT NULL REFERENCES issues(issue_id),
     author_login TEXT,
