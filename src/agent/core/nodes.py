@@ -15,6 +15,7 @@ from src.agent.core.prompts import (
     EVIDENCE_GATE_NOTE,
     FINAL_ANSWER_NUDGE,
     NO_NEW_CANDIDATES_NOTE,
+    SEARCH_LIMIT_NOTE,
 )
 from src.agent.core.state import AgentState
 from src.agent.tools import ToolResult, execute_tool, to_openai_tools
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 REQUIRED_EVIDENCE_TOOLS = {"graph_expand", "fetch_details"}
 MAX_GATE_BLOCKS = 1
+MAX_SEMANTIC_SEARCHES = 2
 
 def _add_usage(state: AgentState, response: Any) -> dict[str, int]:
     """Cộng token của response vào bản sao của usage trong state."""
@@ -137,6 +139,7 @@ def call_llm_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
 def _run_tool_call(
     call: dict[str, Any],
     overrides: dict[str, dict] | None,
+    blocked: set[tuple[str, int]] | None,
     seen_calls: dict[str, ToolResult],
     seen_candidates: set,
 ) -> tuple[ToolResult, dict[str, Any]]:
@@ -173,7 +176,7 @@ def _run_tool_call(
             True,
         )
     else:
-        result = execute_tool(name, arguments, overrides)
+        result = execute_tool(name, arguments, overrides, blocked)
         seen_calls[key] = result
 
         if name == "semantic_search" and isinstance(result.data, list) and result.data:
@@ -202,6 +205,7 @@ def execute_tools_node(state: AgentState, config: RunnableConfig) -> dict[str, A
     """Thực thi mọi tool call trong tin nhắn assistant gần nhất."""
     runtime = config.get("configurable", {})
     overrides = runtime.get("overrides")
+    blocked = runtime.get("blocked_issues")
 
     messages = list(state.get("messages", []))
     if not messages:
@@ -226,10 +230,21 @@ def execute_tools_node(state: AgentState, config: RunnableConfig) -> dict[str, A
         current_record = {"step": state.get("step_count", 0), "tool_calls": []}
 
     for call in tool_calls:
-        result, record = _run_tool_call(call, overrides, seen_calls, seen_candidates)
+        name = call.get("function", {}).get("name")
+        searches_done = sum(1 for r in tool_results if r.name == "semantic_search")
+
+        if name == "semantic_search" and searches_done >= MAX_SEMANTIC_SEARCHES:
+            result = ToolResult(name, {}, SEARCH_LIMIT_NOTE, True)
+            record = {
+                "name": name, "duplicate": False, "search_limit": True,
+                "arguments": call.get("function", {}).get("arguments"),
+                "is_error": True, "result_chars": len(result.content),
+            }
+        else:
+            result, record = _run_tool_call(call, overrides, blocked, seen_calls, seen_candidates)
 
         tool_call_count += 1
-        if not record["duplicate"]:
+        if not record["duplicate"] and not record.get("search_limit"):
             tool_results.append(result)
             if not result.is_error:
                 executed_names.add(record["name"])
