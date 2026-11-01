@@ -61,10 +61,54 @@ REFERENCED_BY_QUERY = """
     ORDER BY src.number
 """
 
+# Truy vấn 4: Truy vấn gộp lấy PR/Commit đã đóng từng issue
+CLOSED_BY_BATCH_QUERY = """
+    UNWIND $pairs AS pair
+    MATCH(i:Issue {
+        repo: pair.repo,
+        number: number.repo
+    })-[:CLOSED_BY]->(x)
+    RETURN 
+        i.repo AS repo,
+        i.number AS number,
+        labels(x)[0] AS type,
+        x AS closer
+    ORDER BY repo, number, type, closer.number
+"""
+
+def closed_by_for(
+    pairs: list[tuple[str, int]],
+    max_per_issue: int = 2,
+)-> dict[tuple[str, int], list[dict]]:
+    """PR/commit đã đóng từng issue, cho nhiều issue cùng lúc"""
+    if not pairs:
+        return {}
+
+    params = [{"repo": repo, "number": number} for repo, number in pairs]
+    driver = get_driver()
+
+    try:
+        with driver.session() as session:
+            rows = session.run(CLOSED_BY_BATCH_QUERY, pairs = params).data()
+    finally:
+        close_driver(driver)
+
+    result: dict[tuple[str, int], list[dict]] = {}
+    for row in rows:
+        entries = result.setdefault((row["repo"], row["number"]), [])
+        if len(entries) >= max_per_issue:
+            continue
+        keys = COMMIT_KEYS if row["type"] == "Commit" else LINK_KEYS
+        entries.append(
+            {"type": row["type"], **_pick(row["closer"], keys)}
+        )
+    return result
+
 def graph_expand(
     repo:str,
     number: int,
-    max_items: int = 10
+    max_items: int = 10,
+    blocked: set | None = None,
 )-> dict|None:
     """Mở rộng một issue sang các bằng chứng liên kết trong graph.
 
@@ -147,6 +191,13 @@ def graph_expand(
         for row in ref_rows
     ]
 
+    def is_blocked(item: dict) -> bool:
+        return (item.get("repo"), item.get("number")) in blocked
+
+    closed_by = [item for item in closed_by if not is_blocked(item)]
+    co_closed = [item for item in co_closed if not is_blocked(item)]
+    referenced_by = [item for item in referenced_by if not is_blocked(item)]
+
     counts = {
         "closed_by": len(closed_by),
         "co_closed_issues": len(co_closed),
@@ -160,3 +211,4 @@ def graph_expand(
         "referenced_by": referenced_by[:max_items],
         "counts": counts,
     }
+
