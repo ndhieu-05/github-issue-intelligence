@@ -288,11 +288,22 @@ def _dump_result(data: Any) -> str:
         return text
     return text[:MAX_RESULT_CHARS] + f"... [đã cắt, kết quả gốc dài {len(text)} ký tự]"
 
+def _is_blocked(item: Any, blocked: set)-> bool:
+    return isinstance(item, dict) and (item.get("repo"), item.get("number")) in blocked
+
+def _scrub(data: Any, blocked: set) -> Any:
+    """Lọc issue bị chặn và đồng bộ counts với dữ liệu sau lọc."""
+    if isinstance(data, list):
+        return [_scrub(x, blocked) for x in data if not _is_blocked(x, blocked)]
+    if isinstance(data, dict):
+        return {k: _scrub(v, blocked) for k, v in data.items()}
+    return data
 
 def execute_tool(
     name: str,
     arguments: dict | None,
     overrides: dict[str, dict] | None = None,
+    blocked = None
 ) -> ToolResult:
     """Chạy một tool theo yêu cầu của LLM. Không bao giờ ném lỗi ra ngoài.
 
@@ -326,7 +337,29 @@ def execute_tool(
     try:
         args = _validate_and_coerce(spec, arguments)
         args.update((overrides or {}).get(name, {}))
-        data = spec.func(**args)
+
+        if blocked:
+            target = None
+            if name == "graph_expand":
+                target = (args["repo"], args["number"])
+            elif name == "fetch_details" and args.get("kind") == "issue":
+                try:
+                    target = (args["repo"], int(args["ref"]))
+                except ValueError:
+                    pass
+
+            if target in blocked:
+                # Giả vờ như issue chưa tồn tại, không nói là bị chặn.
+                return ToolResult(name, arguments, "Không tìm thấy kết quả nào khớp với tham số đã cho.", True)
+            
+        if name == "graph_expand":
+            data = spec.func(**args, blocked=blocked or set())
+        else:
+            data = spec.func(**args)
+
+        if blocked and data is not None:
+            data = _scrub(data, blocked)
+            
     except Exception as exc:
         logger.warning("Tool %s lỗi với tham số %s: %s", name, arguments, exc)
         return ToolResult(name, arguments, f"Lỗi khi chạy {name}: {exc}", True)

@@ -15,21 +15,13 @@ evidence), which other issues the same PR closed, and what references it (weak e
 - fetch_details: read the full content of one issue, pull request or commit.
 
 How to work (your step budget is small, so plan it):
-1. First, identify the NEW issue from the user prompt. Call
-   graph_expand on that exact issue number before investigating
-   historical candidates. Do not substitute a similar issue.
-2. Call fetch_details on the NEW issue to understand its exact
-   problem and context.
-3. Call semantic_search at most ONCE initially to find similar
-   historical issues. Use English queries.
-4. Use graph_expand on the most promising historical candidate
-   only when it may provide additional evidence. Prefer candidates
-   whose specific problem matches the NEW issue, not merely a
-   broad topic.
-5. Call fetch_details on the most relevant closing PR/commit or
-   historical issue to verify the evidence.
-6. Stop when the available evidence is sufficient or the budget
-   is exhausted. Clearly state what remains unverified.
+1. The NEW issue's title and description are already in the user message; it is not in the \
+repository history, so never look it up.
+2. Call semantic_search to find similar historical issues (English queries, at most twice).
+3. Right after searching, call graph_expand on the most promising candidates (several in one \
+step) to see how they were resolved. This is required before anything else.
+4. Then call fetch_details on the most relevant closing PR or historical issue to verify.
+5. Stop when the evidence is sufficient or the budget runs out, and say what remains unverified.
 
 Rules:
 - Use only facts that appear in tool results. Never invent issues, pull requests, commits, \
@@ -86,4 +78,10 @@ EVIDENCE_GATE_NOTE = (
     "closing PRs/commits, then fetch_details on the most relevant issue or closing PR. If the "
     "remaining budget makes this impossible, state the limitation and do not present a cause or "
     "fix as confirmed."
+)
+
+SEARCH_LIMIT_NOTE = (
+    "[Limit] You have used all allowed semantic_search calls. Do not search again. "
+    "Use graph_expand on the best candidates you already have, then fetch_details, "
+    "then write the final answer."
 )
